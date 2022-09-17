@@ -1,0 +1,6 @@
+---
+- hosts: teamspeak
+  roles:
+    - teamspeak_server
+  remote_user: root
+

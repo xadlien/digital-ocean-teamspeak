@@ -1,0 +1,72 @@
+- name: install packages
+  apt:
+    name: bzip2
+    state: latest
+  tags:
+  - teamspeak_server
+
+- name: create teamspeak user
+  user:
+    name: teamspeak
+  
+- name: download teamspeak
+  get_url:
+    url: https://files.teamspeak-services.com/releases/server/3.13.7/teamspeak3-server_linux_amd64-3.13.7.tar.bz2
+    dest: /tmp/teamspeak.tar.bz2
+  tags:
+  - teamspeak_server
+
+- name: install teamspeak
+  shell: tar -xvf /tmp/teamspeak.tar.bz2 -C /home/teamspeak && chown -R teamspeak /home/teamspeak
+  tags:
+  - teamspeak_server
+
+- name: accept eula
+  file:
+    path: /home/teamspeak/teamspeak3-server_linux_amd64/.ts3server_license_accepted
+    state: touch
+    mode: 0744
+    owner: teamspeak
+  tags:
+  - teamspeak_server
+
+- name: copy teamspeak config
+  copy:
+    src: ts3server.ini
+    dest: /home/teamspeak/teamspeak3-server_linux_amd64/
+    mode: 0744
+    owner: teamspeak
+  tags:
+  - teamspeak_server
+
+- name: copy teamspeak service file
+  copy:
+    src: teamspeak_server.service
+    dest: /etc/systemd/system/
+  tags:
+  - teamspeak_server
+
+- name: enable and start ts3 server
+  systemd:
+    name: teamspeak_server
+    state: restarted
+    daemon_reload: true
+    enabled: true
+  tags:
+  - teamspeak_server
+
+- name: wait for token
+  shell: sleep 5
+  tags:
+  - teamspeak_server
+
+- name: pull admin token
+  shell: grep token /home/teamspeak/teamspeak3-server_linux_amd64/logs/* | grep token= | cut -d '=' -f 2
+  register: token
+  tags:
+  - teamspeak_server
+
+- name: output admin token
+  debug: msg="token={{token.stdout_lines}}"
+  tags:
+  - teamspeak_server
